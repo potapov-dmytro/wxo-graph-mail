@@ -2,7 +2,7 @@
 
 ## Demo
 
-<video src="demo.mp4" controls width="100%"></video>
+<video src="https://github.ibm.com/Dmytro-Potapov/wxo-graph-mail/raw/main/demo.mp4" controls width="100%"></video>
 
 [Watch the demo (demo.mp4)](demo.mp4)
 
