@@ -66,7 +66,13 @@ export TENANT_ID=... CLIENT_ID=... CLIENT_SECRET=...
 bash setup.sh
 ```
 
-The script imports the connection, sets credentials for draft and live, imports the OpenAPI tool bound to the connection, imports the agent and deploys it.
+[`setup.sh`](setup.sh) contains the watsonx Orchestrate ADK (`orchestrate`) commands that:
+
+- import the `msgraph` connection (`orchestrate connections import`) and set its credentials for draft and live (`orchestrate connections set-credentials`);
+- import the OpenAPI tool bound to the connection (`orchestrate tools import -k openapi`);
+- import the `mail_reader` agent (`orchestrate agents import`) and deploy it (`orchestrate agents deploy`).
+
+The setup assumes the agent runs in the **live** environment: it is deployed with `orchestrate agents deploy`, and the embedded chat values (`agentEnvironmentId` and the others) in Step 4 must be taken from the Live environment.
 
 Then, in the watsonx Orchestrate UI, open the agent `mail_reader` -> **Deploy** tab -> **Channels** -> **Embedded agent**. Copy `orchestrationID`, `hostURL`, `agentId` and `agentEnvironmentId` from the embed script (and `deploymentPlatform` and `crn` if they are present) for `host/.env`.
 
