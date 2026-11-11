@@ -2,9 +2,9 @@
 
 ## Demo
 
-<video src="https://github.ibm.com/Dmytro-Potapov/wxo-graph-mail/raw/main/demo.mp4" controls width="100%"></video>
+![Demo](demo.gif)
 
-[Watch the demo (demo.mp4)](demo.mp4)
+[Full quality video (demo.mp4)](demo.mp4)
 
 Read-only mail agent: user signs in to a host page with Entra ID, the page embeds watsonx Orchestrate (wxO) web chat, wxO exchanges the user's token for a Microsoft Graph token on behalf of the user and calls Graph through an OpenAPI tool.
 
