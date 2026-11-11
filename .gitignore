@@ -1,0 +1,9 @@
+host/keys/*
+!host/keys/README.md
+host/.env
+host/node_modules/
+.venv/
+venv/
+.DS_Store
+.bob/mcp.json
+.vscode/

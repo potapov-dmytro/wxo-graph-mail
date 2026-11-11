@@ -1,0 +1,23 @@
+# Primary: single-hop exchange. wxO sends the user's SSO token to Entra ID
+# with Microsoft's OBO parameters and receives a Graph token.
+# Credentials are set by setup.sh (never stored in this file).
+spec_version: v1
+kind: connection
+app_id: msgraph
+environments:
+  draft:
+    kind: oauth_auth_token_exchange_flow
+    type: member
+    sso: true
+    server_url: https://graph.microsoft.com
+    app_config:
+      header:
+        content-type: application/x-www-form-urlencoded
+  live:
+    kind: oauth_auth_token_exchange_flow
+    type: member
+    sso: true
+    server_url: https://graph.microsoft.com
+    app_config:
+      header:
+        content-type: application/x-www-form-urlencoded

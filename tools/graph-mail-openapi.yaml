@@ -1,0 +1,159 @@
+openapi: 3.0.3
+info:
+  title: Microsoft Graph Mail (Read Only)
+  version: 1.0.0
+  description: >
+    Read the signed-in user's Outlook mailbox through Microsoft Graph.
+    The bearer token is injected by the watsonx Orchestrate msgraph connection.
+servers:
+  - url: https://graph.microsoft.com/v1.0
+security:
+  - entra: [Mail.Read]
+components:
+  securitySchemes:
+    # Descriptive only. wxO injects the connection's access token as
+    # Authorization: Bearer. If import rejects this scheme next to a token
+    # exchange connection, swap to: { type: http, scheme: bearer }
+    entra:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+          tokenUrl: https://login.microsoftonline.com/common/oauth2/v2.0/token
+          scopes:
+            Mail.Read: Read the user's mail
+  schemas:
+    EmailAddress:
+      type: object
+      properties:
+        name: { type: string }
+        address: { type: string }
+    MessageSummary:
+      type: object
+      properties:
+        id: { type: string, description: Message ID. Pass to get_my_message. }
+        subject: { type: string }
+        from:
+          type: object
+          properties:
+            emailAddress: { $ref: '#/components/schemas/EmailAddress' }
+        receivedDateTime: { type: string, format: date-time }
+        isRead: { type: boolean }
+        hasAttachments: { type: boolean }
+        importance: { type: string }
+        bodyPreview: { type: string, description: First 255 characters of the body }
+    MessageList:
+      type: object
+      properties:
+        value:
+          type: array
+          items: { $ref: '#/components/schemas/MessageSummary' }
+    Message:
+      allOf:
+        - $ref: '#/components/schemas/MessageSummary'
+        - type: object
+          properties:
+            toRecipients:
+              type: array
+              items:
+                type: object
+                properties:
+                  emailAddress: { $ref: '#/components/schemas/EmailAddress' }
+            body:
+              type: object
+              properties:
+                contentType: { type: string }
+                content: { type: string }
+  parameters:
+    top:
+      name: $top
+      in: query
+      description: Number of messages to return, 1 to 25. Default 10.
+      schema: { type: integer, minimum: 1, maximum: 25, default: 10 }
+    filter:
+      name: $filter
+      in: query
+      description: >
+        OData filter. Examples: isRead eq false;
+        receivedDateTime ge 2026-11-10T00:00:00Z;
+        from/emailAddress/address eq 'name@example.com'.
+        When filtering on receivedDateTime, also order by receivedDateTime.
+      schema: { type: string }
+    orderby:
+      name: $orderby
+      in: query
+      description: Sort order. Use receivedDateTime desc for newest first.
+      schema: { type: string, default: receivedDateTime desc }
+    select:
+      name: $select
+      in: query
+      description: Fields to return. Keep the default to limit response size.
+      schema:
+        type: string
+        default: id,subject,from,receivedDateTime,isRead,hasAttachments,importance,bodyPreview
+paths:
+  /me/messages:
+    get:
+      operationId: list_my_messages
+      summary: List messages across the signed-in user's mailbox
+      description: >
+        Returns the signed-in user's most recent emails from all folders.
+        Use for questions such as "what are my latest emails" or "any unread mail from today".
+      parameters:
+        - $ref: '#/components/parameters/top'
+        - $ref: '#/components/parameters/filter'
+        - $ref: '#/components/parameters/orderby'
+        - $ref: '#/components/parameters/select'
+      responses:
+        '200':
+          description: Messages
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageList' }
+  /me/mailFolders/inbox/messages:
+    get:
+      operationId: list_my_inbox
+      summary: List messages in the signed-in user's Inbox only
+      description: >
+        Returns the signed-in user's most recent emails from the Inbox folder only.
+        Use when the user says "inbox".
+      parameters:
+        - $ref: '#/components/parameters/top'
+        - $ref: '#/components/parameters/filter'
+        - $ref: '#/components/parameters/orderby'
+        - $ref: '#/components/parameters/select'
+      responses:
+        '200':
+          description: Inbox messages
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageList' }
+  /me/messages/{message_id}:
+    get:
+      operationId: get_my_message
+      summary: Get one email including its body
+      description: Use after list_my_messages to read or summarise a specific email.
+      parameters:
+        - name: message_id
+          in: path
+          required: true
+          description: The id field from list_my_messages or list_my_inbox
+          schema: { type: string }
+        - name: $select
+          in: query
+          schema:
+            type: string
+            default: id,subject,from,toRecipients,receivedDateTime,isRead,hasAttachments,importance,body
+        - name: Prefer
+          in: header
+          description: Ask Graph for a plain text body instead of HTML.
+          schema:
+            type: string
+            enum: ['outlook.body-content-type="text"']
+            default: 'outlook.body-content-type="text"'
+      responses:
+        '200':
+          description: Message
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }

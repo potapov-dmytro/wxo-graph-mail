@@ -1,0 +1,20 @@
+{
+  "name": "wxo-graph-mail-host",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Host page: Entra ID sign-in plus watsonx Orchestrate secure embedded chat with sso_token",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@azure/msal-node": "^2.16.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-session": "^1.18.1",
+    "jose": "^5.9.6",
+    "jsonwebtoken": "^9.0.2",
+    "node-rsa": "^1.1.1"
+  }
+}

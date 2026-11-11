@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mail Agent</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; color: #000; background: #fff; }
+    header { padding: 16px 24px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+    h1 { font-size: 18px; margin: 0; }
+    a.button { color: #fff; background: #0f62fe; padding: 8px 14px; text-decoration: none; border-radius: 4px; }
+    main { padding: 24px; }
+    #status { margin-bottom: 16px; }
+    #root { height: 80vh; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mail Agent</h1>
+    <span id="auth"></span>
+  </header>
+  <main>
+    <div id="status">Checking sign-in...</div>
+    <div id="root"></div>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const authEl = document.getElementById("auth");
+
+    async function fetchWxoToken() {
+      const r = await fetch("/createJWT", { credentials: "include" });
+      if (r.status === 401) { window.location = "/auth/login"; return null; }
+      if (!r.ok) throw new Error(`createJWT failed: ${r.status} ${await r.text()}`);
+      return r.text();
+    }
+
+    async function start() {
+      const me = await (await fetch("/auth/me", { credentials: "include" })).json();
+      if (!me.signedIn) {
+        statusEl.textContent = "Sign in with your Entra ID account to use the mail agent.";
+        authEl.innerHTML = '<a class="button" href="/auth/login">Sign in</a>';
+        return;
+      }
+      authEl.innerHTML = `${me.name} &nbsp; <a class="button" href="/auth/logout">Sign out</a>`;
+      statusEl.textContent = "Loading chat...";
+
+      const cfg = await (await fetch("/config")).json();
+      const token = await fetchWxoToken();
+      if (!token) return;
+
+      window.wxOConfiguration = {
+        orchestrationID: cfg.orchestrationID,
+        hostURL: cfg.hostURL,
+        rootElementID: "root",
+        showLauncher: false,
+        token,
+        ...(cfg.deploymentPlatform ? { deploymentPlatform: cfg.deploymentPlatform } : {}),
+        ...(cfg.crn ? { crn: cfg.crn } : {}),
+        layout: { form: "custom", customElement: document.getElementById("root") },
+        chatOptions: {
+          agentId: cfg.agentId,
+          agentEnvironmentId: cfg.agentEnvironmentId,
+          onLoad: (instance) => {
+            // Refresh the wxO JWT (and with it the Entra sso_token) when it expires.
+            instance.on("authTokenNeeded", async (event) => {
+              try {
+                event.authToken = await fetchWxoToken();
+              } catch (e) {
+                console.error(e);
+                window.location = "/auth/login";
+              }
+            });
+          },
+        },
+      };
+
+      const script = document.createElement("script");
+      script.src = `${cfg.hostURL}/wxochat/wxoLoader.js?embed=true`;
+      script.addEventListener("load", () => { statusEl.textContent = ""; wxoLoader.init(); });
+      document.head.appendChild(script);
+    }
+
+    start().catch((e) => { statusEl.textContent = e.message; console.error(e); });
+  </script>
+</body>
+</html>
